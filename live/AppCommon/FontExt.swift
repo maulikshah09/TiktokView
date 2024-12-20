@@ -9,7 +9,7 @@ import UIKit
 
 // MARK: - Font Declare here
 public enum AppFont: String {
-    
+
     case regular        = "SFProText-Regular"
     case medium         = "SFProText-Medium"
     case semiBold       = "SFProText-Semibold"

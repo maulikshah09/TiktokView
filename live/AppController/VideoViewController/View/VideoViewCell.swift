@@ -43,11 +43,6 @@ class VideoViewCell: UICollectionViewCell {
         tblComments.register(cellTypes: cells)
         tblComments.showsVerticalScrollIndicator = false
         txtComment.delegate = self
-        
-        NotificationCenter.default.addObserver(self,
-                                                      selector: #selector(keyboardWillShow(_:)),
-                                                      name: UIResponder.keyboardWillShowNotification,
-                                                      object: nil)
     }
     
     @objc func keyboardWillShow(_ notification: Notification) {
@@ -141,6 +136,11 @@ class VideoViewCell: UICollectionViewCell {
             self?.tblComments.reloadData()
             self?.startScrollingComments()
         }
+        
+        NotificationCenter.default.addObserver(self,
+                                                      selector: #selector(keyboardWillShow(_:)),
+                                                      name: UIResponder.keyboardWillShowNotification,
+                                                      object: nil)
     }
     
     private func scrollToBottom() {
