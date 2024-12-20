@@ -68,6 +68,7 @@ extension ViewController :UICollectionViewDataSource,UICollectionViewDelegateFlo
     }
 
     func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        self.view.endEditing(true)
         if let cell = cell as? VideoViewCell,let  currentlyPlayingIndex = currentlyPlayingIndex {
             if currentlyPlayingIndex != indexPath {
                
@@ -146,17 +147,13 @@ extension ViewController: UIScrollViewDelegate {
                 
                 let visibleFrame = collectionView.bounds.intersection(attributes.frame)
                 let visibleArea = visibleFrame.width * visibleFrame.height
-                
-             //   print("Index: \(indexPath.row), Visible Area: \(visibleArea)") // Debugging log
-                
+    
                 if visibleArea > maxVisibleArea {
                     maxVisibleArea = visibleArea
                     perfectIndex = indexPath
                 }
             }
         }
-
-      //  print("Perfect Index: \(perfectIndex?.row ?? -1)") // Debugging log for the selected index
         return perfectIndex
     }
 }

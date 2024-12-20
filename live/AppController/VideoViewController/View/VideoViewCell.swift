@@ -45,17 +45,6 @@ class VideoViewCell: UICollectionViewCell {
         txtComment.delegate = self
     }
     
-    @objc func keyboardWillShow(_ notification: Notification) {
-            if let userInfo = notification.userInfo,
-           let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-            keyboardHeight = keyboardFrame.height
-            print("Keyboard height: \(keyboardHeight)") // For debugging
-                
-            videoViewBottomConstant.constant = -keyboardHeight
-            stkBottomConstant.constant = keyboardHeight
-        }
-    }
-    
     override func prepareForReuse() {
         super.prepareForReuse()
         playerManager?.pause()
@@ -63,16 +52,18 @@ class VideoViewCell: UICollectionViewCell {
         NotificationCenter.default.removeObserver(self)
         stopScrollingComments()
     }
+
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        
+    @IBAction func btnSmilePress(_ sender: Any) {
+       
     }
-    
+}
+
+
+extension VideoViewCell {
     private func setupPlayerManager() {
         playerManager = PlayerManager()
         playerManager?.playerFinishedPlaying = { [weak self] in
-            // Handle video finished playing logic here
             self?.playerManager?.restart()
         }
     }
@@ -83,15 +74,6 @@ class VideoViewCell: UICollectionViewCell {
         playerView.isUserInteractionEnabled = true
     }
     
-    
-    private func setupdoubleTapGesture() {
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(playAnimation))
-        tapGesture.numberOfTapsRequired = 2
-        playerView.addGestureRecognizer(tapGesture)
-        playerView.isUserInteractionEnabled = true
-    }
-    
-
     @objc private func handlePlayerTap() {
         if isPlaying {
             pause()
@@ -100,12 +82,80 @@ class VideoViewCell: UICollectionViewCell {
         }
     }
     
-  
-    
-    @IBAction func btnSmilePress(_ sender: Any) {
-       
+    private func setupdoubleTapGesture() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(playAnimation))
+        tapGesture.numberOfTapsRequired = 2
+        playerView.addGestureRecognizer(tapGesture)
+        playerView.isUserInteractionEnabled = true
     }
- 
+    
+    @objc private  func playAnimation(){
+        heartAnimationView.animation = LottieAnimation.named("Heart.json")
+        heartAnimationView.contentMode = .scaleAspectFit
+        heartAnimationView.loopMode = .playOnce
+        heartAnimationView.play()
+    }
+    
+    
+    func play() {
+        playerManager?.play()
+        isPlaying = true
+    }
+    
+    func pause() {
+        playerManager?.pause()
+        isPlaying = false
+    }
+    
+    func playerFinished() {
+        playerManager?.restart()
+    }
+    
+    private func scrollToBottom() {
+        let lastRow = tblComments.numberOfRows(inSection: tblComments.numberOfSections - 1) - 1
+        if lastRow >= 0 {
+            let indexPath = IndexPath(row: lastRow, section: tblComments.numberOfSections - 1)
+            tblComments.scrollToRow(at: indexPath, at: .bottom, animated: true)
+        }
+        commentsTimer?.invalidate()
+    }
+    
+    private func startScrollingComments() {
+        stopScrollingComments() // Stop any existing timer
+        commentsTimer = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(scrollToNextComment), userInfo: nil, repeats: true)
+    }
+    
+    
+    @objc private func scrollToNextComment() {
+        guard arrComments?.count ?? 0 > 0 else { return }
+        currentCommentIndex = (currentCommentIndex + 1) % (arrComments?.count ?? 0)
+        tblComments.scrollToRow(at: IndexPath(row: currentCommentIndex, section: 0), at: .top, animated: true)
+    }
+    
+    func stopScrollingComments() {
+        commentsTimer?.invalidate()
+        commentsTimer = nil
+    }
+    
+    @objc func keyboardWillShow(_ notification: Notification) {
+        if let userInfo = notification.userInfo,
+           let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+            keyboardHeight = keyboardFrame.height
+            videoViewBottomConstant.constant = -keyboardHeight
+            stkBottomConstant.constant = keyboardHeight
+        }
+    }
+    
+    @objc private func keyboardDidHide(_ notification: Notification) {
+        
+        setBottomConstant()
+    }
+    
+    func setBottomConstant() {
+        videoViewBottomConstant.constant = 0
+        stkBottomConstant.constant = 0
+    }
+    
     func configure(info : Video,comments:[Comment]) {
         if let videoUrl = info.videoUrl,let username = info.username,let profileImage = info.profileUrl {
             playerManager?.configurePlayer(with: videoUrl, in: playerView)
@@ -136,61 +186,23 @@ class VideoViewCell: UICollectionViewCell {
             self?.tblComments.reloadData()
             self?.startScrollingComments()
         }
-        
         NotificationCenter.default.addObserver(self,
                                                       selector: #selector(keyboardWillShow(_:)),
                                                       name: UIResponder.keyboardWillShowNotification,
                                                       object: nil)
-    }
-    
-    private func scrollToBottom() {
-        let lastRow = tblComments.numberOfRows(inSection: tblComments.numberOfSections - 1) - 1
-        if lastRow >= 0 {
-            let indexPath = IndexPath(row: lastRow, section: tblComments.numberOfSections - 1)
-            tblComments.scrollToRow(at: indexPath, at: .bottom, animated: true)
-        }
-        commentsTimer?.invalidate()
-    }
-    
-    private func startScrollingComments() {
-        stopScrollingComments() // Stop any existing timer
-        commentsTimer = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(scrollToNextComment), userInfo: nil, repeats: true)
-    }
-    
-    
-    @objc private func scrollToNextComment() {
-        guard arrComments?.count ?? 0 > 0 else { return }
-        currentCommentIndex = (currentCommentIndex + 1) % (arrComments?.count ?? 0)
-        tblComments.scrollToRow(at: IndexPath(row: currentCommentIndex, section: 0), at: .top, animated: true)
-    }
-    
-    func stopScrollingComments() {
-        commentsTimer?.invalidate()
-        commentsTimer = nil
-    }
-    
-    @objc private  func playAnimation(){
-        heartAnimationView.animation = LottieAnimation.named("Heart.json")
-        heartAnimationView.contentMode = .scaleAspectFit
-        heartAnimationView.loopMode = .playOnce
-        heartAnimationView.play()
-    }
-    
-    func play() {
-        playerManager?.play()
-        isPlaying = true
-    }
-    
-    func pause() {
-        playerManager?.pause()
-        isPlaying = false
-    }
-    
-    func playerFinished() {
-        playerManager?.restart()
+        
+        
+        NotificationCenter.default.addObserver(
+                   self,
+                   selector: #selector(keyboardDidHide(_:)),
+                   name: UIResponder.keyboardDidHideNotification,
+                   object: nil
+               )
+        
+        setBottomConstant()
+
     }
 }
-
  
 
 extension VideoViewCell  : UITableViewDelegate,UITableViewDataSource {
@@ -231,18 +243,16 @@ extension VideoViewCell : UITextFieldDelegate {
             self.arrComments?.append(comment)
             
             DispatchQueue.main.async {
-                print("Reloading table with comments: \(self.arrComments ?? [])")
                 self.tblComments.reloadData()
                 self.scrollToBottom()
             }
             textField.text = ""
             textField.resignFirstResponder()
-            // change constraing
-            videoViewBottomConstant.constant = 0
-            stkBottomConstant.constant = 0
         }
+        setBottomConstant()
         return true
     }
+
 }
 
  
